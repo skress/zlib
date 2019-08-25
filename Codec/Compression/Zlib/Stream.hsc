@@ -123,9 +123,6 @@ import Data.ByteString (ByteString)
 import Control.Applicative (Applicative(..))
 #endif
 import Control.Monad (ap,liftM)
-#if MIN_VERSION_base(4,9,0)
-import qualified Control.Monad.Fail as Fail
-#endif
 #if __GLASGOW_HASKELL__ >= 702
 #if __GLASGOW_HASKELL__ >= 708
 import Control.Monad.ST.Strict
@@ -144,6 +141,7 @@ import GHC.Generics (Generic)
 #ifdef DEBUG
 import System.IO (hPutStrLn, stderr)
 #endif
+import qualified Control.Monad.Fail as Fail
 
 import Prelude hiding (length)
 
@@ -376,21 +374,14 @@ instance Monad Stream where
   (>>=)  = thenZ
 --  m >>= f = (m `thenZ` \a -> consistencyCheck `thenZ_` returnZ a) `thenZ` f
   (>>)   = (*>)
-
-#if !MIN_VERSION_base(4,8,0)
   return = pure
+
+#if !MIN_VERSION_base(4,13,0)
+  fail = Fail.fail
 #endif
 
-#if !MIN_VERSION_base(4,9,0)
-  fail   = (finalise >>) . failZ
-#elif !MIN_VERSION_base(4,13,0)
-  fail   = Fail.fail
-#endif
-
-#if MIN_VERSION_base(4,9,0)
 instance Fail.MonadFail Stream where
   fail   = (finalise >>) . failZ
-#endif
 
 returnZ :: a -> Stream a
 returnZ a = Z $ \_ inBuf outBuf outOffset outLength ->
